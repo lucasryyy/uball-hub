@@ -70,7 +70,7 @@ export default function MatchPage() {
           </div>
         </div>
       ) : (
-        <div className="bg-[#1c1c1e] p-4 rounded-xl text-center">
+        <div className="bg-[#1c1c1e] p-4 rounded-xl text-center rounded-xl">
           <p className="text-sm text-gray-400">Ingen spillerbedømmelser tilgængelige</p>
         </div>
       )}
