@@ -1,14 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { groupedMockScores } from "../data/mockScores";
+import { groupedMockScores, type Match } from "../data/mockScores";
+import { mockMatchDetails } from "../data/mockMatchDetails";
+import MatchEvents from "./MatchEvents";
+import PlayerRatings from "./PlayerRatings";
 
 export default function MatchPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const matchId = Number(id);
 
-  const match = groupedMockScores
-    .flatMap((group) => group.matches)
-    .find((m) => m.id === matchId);
+  const matches: Match[] = groupedMockScores.flatMap((group) => group.matches);
+  const match = matches.find((m) => m.id === matchId);
 
   if (!match) {
     return (
@@ -23,6 +25,8 @@ export default function MatchPage() {
       </div>
     );
   }
+
+  const details = mockMatchDetails[matchId]
 
   return (
     <div className="text-white px-6 py-8 max-w-xl mx-auto space-y-4">
