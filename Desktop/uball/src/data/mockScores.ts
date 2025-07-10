@@ -1,5 +1,17 @@
 // src/data/mockScores.ts
-export const groupedMockScores = [
+export type Match = {
+  id: number
+  homeTeam: string
+  awayTeam: string
+  homeScore: number | null
+  awayScore: number | null
+  status: string
+  time: string
+  homeLogo: string
+  awayLogo: string
+}
+
+export const groupedMockScores: { tournament: string; matches: Match[] }[] = [
   {
     tournament: "CONCACAF Gold Cup Semifinale",
     matches: [
