@@ -1,14 +1,16 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { groupedMockScores } from "../data/mockScores";
+import { groupedMockScores, type Match } from "../data/mockScores";
+import { mockMatchDetails } from "../data/mockMatchDetails";
+import MatchEvents from "./MatchEvents";
+import PlayerRatings from "./PlayerRatings";
 
 export default function MatchPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const matchId = Number(id);
 
-  const match = groupedMockScores
-    .flatMap((group) => group.matches)
-    .find((m) => m.id === matchId);
+  const matches: Match[] = groupedMockScores.flatMap((group) => group.matches);
+  const match = matches.find((m) => m.id === matchId);
 
   if (!match) {
     return (
@@ -23,6 +25,8 @@ export default function MatchPage() {
       </div>
     );
   }
+
+  const details = mockMatchDetails[matchId]
 
   return (
     <div className="text-white px-6 py-8 max-w-xl mx-auto space-y-4">
@@ -54,9 +58,18 @@ export default function MatchPage() {
 </div>
 
 
-      <div className="bg-[#1c1c1e] p-4 rounded-xl shadow-sm">
-        <p className="text-gray-300">Kampdetaljer og statistik kommer her 🔍</p>
-      </div>
+      {details && (
+        <div className="bg-[#1c1c1e] p-4 rounded-xl shadow-sm space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Match Events</h2>
+            <MatchEvents events={details.events} />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Player Ratings</h2>
+            <PlayerRatings home={details.homePlayers} away={details.awayPlayers} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
