@@ -26,7 +26,7 @@ export default function MatchPage() {
     );
   }
 
-  const details = mockMatchDetails[matchId]
+  const details = mockMatchDetails[matchId];
 
   return (
     <div className="text-white px-6 py-8 max-w-xl mx-auto space-y-4">
