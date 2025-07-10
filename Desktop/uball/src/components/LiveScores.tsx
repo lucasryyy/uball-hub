@@ -24,16 +24,7 @@ export default function LiveScores() {
     const navigate = useNavigate();
   return (
     <div className="bg-[#0e0e0e] min-h-screen text-white flex flex-col items-center">
-      {/* Header */}
-      <header className="bg-[#1c1c1e] w-full px-6 py-4 shadow-md flex items-center justify-between">
-        <h1 className="text-xl font-bold">Uball</h1>
-        <nav className="flex gap-4 text-sm font-medium">
-          <a href="#" className="hover:text-gray-300">Live</a>
-          <a href="#" className="hover:text-gray-300">Ligaer</a>
-          <a href="#" className="hover:text-gray-300">Transfers</a>
-          <a href="#" className="hover:text-gray-300">Favoritter</a>
-        </nav>
-      </header>
+
 
       {/* Content */}
       <main className="flex-1 w-full flex justify-center px-4 py-6">

@@ -11,6 +11,12 @@ export const groupedMockScores = [
         awayScore: 1,
         status: "FT",
         time: "FT",
+        events: [
+        { minute: 2, type: "yellow", player: "Kevin Long", team: "home" },
+        { minute: 20, type: "goal", player: "Hannes Wolf", assist: "Mitja Ilenic", score: "1 - 0", team: "home" },
+        { minute: 58, type: "sub", player: "Deandre Kerr", replaced: "Tyrese Spicer", team: "away" },
+        { minute: 70, type: "own goal", player: "Tomas Romero", score: "2 - 1", team: "away" }
+        ],
         homeLogo: "https://flagcdn.com/us.svg",
         awayLogo: "https://flagcdn.com/gt.svg"
       },
