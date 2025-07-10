@@ -1,4 +1,10 @@
 // src/data/mockScores.ts
+export type Goal = {
+  player: string;
+  minute: number;
+  team: 'home' | 'away';
+};
+
 export type Match = {
   id: number
   homeTeam: string
@@ -9,6 +15,7 @@ export type Match = {
   time: string
   homeLogo: string
   awayLogo: string
+  goals?: Goal[]
 }
 
 export const groupedMockScores: { tournament: string; matches: Match[] }[] = [
@@ -17,20 +24,19 @@ export const groupedMockScores: { tournament: string; matches: Match[] }[] = [
     matches: [
       {
         id: 1,
-        homeTeam: "USA",
-        awayTeam: "Guatemala",
-        homeScore: 2,
-        awayScore: 1,
+        homeTeam: "New England Revolution",
+        awayTeam: "Inter Miami CF",
+        homeScore: 1,
+        awayScore: 2,
         status: "FT",
         time: "FT",
-        events: [
-        { minute: 2, type: "yellow", player: "Kevin Long", team: "home" },
-        { minute: 20, type: "goal", player: "Hannes Wolf", assist: "Mitja Ilenic", score: "1 - 0", team: "home" },
-        { minute: 58, type: "sub", player: "Deandre Kerr", replaced: "Tyrese Spicer", team: "away" },
-        { minute: 70, type: "own goal", player: "Tomas Romero", score: "2 - 1", team: "away" }
-        ],
-        homeLogo: "https://flagcdn.com/us.svg",
-        awayLogo: "https://flagcdn.com/gt.svg"
+        homeLogo: "https://logos-world.net/wp-content/uploads/2020/06/New-England-Revolution-Logo.png",
+        awayLogo: "https://logos-world.net/wp-content/uploads/2020/06/Inter-Miami-CF-Logo.png",
+        goals: [
+          { player: "Lionel Messi", minute: 27, team: "away" },
+          { player: "Lionel Messi", minute: 38, team: "away" },
+          { player: "Carles Gil", minute: 80, team: "home" }
+        ]
       },
       {
         id: 2,
@@ -41,7 +47,10 @@ export const groupedMockScores: { tournament: string; matches: Match[] }[] = [
         status: "FT",
         time: "FT",
         homeLogo: "https://flagcdn.com/mx.svg",
-        awayLogo: "https://flagcdn.com/hn.svg"
+        awayLogo: "https://flagcdn.com/hn.svg",
+        goals: [
+          { player: "Player M", minute: 33, team: "home" }
+        ]
       }
     ]
   },
