@@ -15,6 +15,7 @@ export default function Layout() {
           <Link to="#" className="hover:text-gray-300">Ligaer</Link>
           <Link to="#" className="hover:text-gray-300">Transfers</Link>
           <Link to="#" className="hover:text-gray-300">Favoritter</Link>
+          <Link to="/league/premier-league" className="hover:text-gray-300">Ligaer</Link>
         </nav>
       </header>
 

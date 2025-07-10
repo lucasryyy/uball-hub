@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import LiveScores from "./components/LiveScores";
 import MatchPage from "./components/MatchPage";
+import LeaguePage from "./components/league/LeaguePage";
 import Layout from "./components/Layout";
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
 
         {/* This means: show MatchPage at "/match/:id" inside Layout */}
         <Route path="match/:id" element={<MatchPage />} />
+        <Route path="league/:id" element={<LeaguePage />} />
       </Route>
     </Routes>
   );
