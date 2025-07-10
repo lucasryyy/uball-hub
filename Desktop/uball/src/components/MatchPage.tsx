@@ -26,7 +26,7 @@ export default function MatchPage() {
     );
   }
 
-  const details = mockMatchDetails[matchId]
+  const details = mockMatchDetails[matchId];
 
   return (
     <div className="text-white px-6 py-8 max-w-xl mx-auto space-y-4">
@@ -58,7 +58,7 @@ export default function MatchPage() {
 </div>
 
 
-      {details && (
+      {details ? (
         <div className="bg-[#1c1c1e] p-4 rounded-xl shadow-sm space-y-4">
           <div>
             <h2 className="text-lg font-semibold mb-2">Match Events</h2>
@@ -68,6 +68,10 @@ export default function MatchPage() {
             <h2 className="text-lg font-semibold mb-2">Player Ratings</h2>
             <PlayerRatings home={details.homePlayers} away={details.awayPlayers} />
           </div>
+        </div>
+      ) : (
+        <div className="bg-[#1c1c1e] p-4 rounded-xl text-center">
+          <p className="text-sm text-gray-400">Ingen spillerbedømmelser tilgængelige</p>
         </div>
       )}
     </div>
