@@ -5,6 +5,8 @@ import LeaguePage from "./components/league/LeaguePage";
 import TeamPage from "./components/team/TeamPage";
 import Layout from "./components/Layout";
 import LeagueOverview from "./components/league/LeagueOverview";
+import TransferPage from "./components/transfers/TransferPage";
+
 
 function App() {
   return (
@@ -15,6 +17,7 @@ function App() {
         <Route path="league" element={<LeagueOverview />} />
         <Route path="league/:id" element={<LeaguePage />} />
         <Route path="team/:id" element={<TeamPage />} />
+        <Route path="transfers" element={<TransferPage />} />
       </Route>
     </Routes>
   );
