@@ -1,90 +1,385 @@
-import { groupedMockScores } from "../data/mockScores";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { groupedMockScores } from "../data/mockScores";
+import { Trophy, Clock, Calendar, Filter, Search, TrendingUp, Zap, Star, ChevronRight, Activity, Users, Target } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const getStatusBadge = (status: string) => {
-  const badgeClass =
-    status === "FT"
-      ? "bg-gray-700"
-      : status === "AFB"
-      ? "bg-gray-600"
-      : !isNaN(Number(status))
-      ? "bg-green-600"
-      : "bg-red-600";
+  const isLive = !isNaN(Number(status));
+  const badgeClass = status === "FT"
+    ? "bg-gray-700"
+    : status === "AFB"
+    ? "bg-gray-600"
+    : isLive
+    ? "bg-green-600 animate-pulse"
+    : "bg-red-600";
 
   return (
-    <span
-      className={`text-[11px] text-white px-2 py-0.5 rounded-full font-medium ${badgeClass}`}
-    >
+    <span className={`text-[11px] text-white px-2 py-0.5 rounded-full font-medium ${badgeClass}`}>
       {status}
     </span>
   );
 };
 
+const getMatchIntensity = (homeScore: number, awayScore: number) => {
+  const totalGoals = homeScore + awayScore;
+  if (totalGoals >= 5) return { color: "text-red-500", label: "High Scoring" };
+  if (totalGoals >= 3) return { color: "text-yellow-500", label: "Exciting" };
+  return { color: "text-gray-500", label: "Tight Match" };
+};
+
 export default function LiveScores() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [favoriteMatches, setFavoriteMatches] = useState<number[]>([]);
+  const [animateCards, setAnimateCards] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => setAnimateCards(true), 100);
+  }, []);
+
+  // Calculate statistics
+  const allMatches = groupedMockScores.flatMap(group => group.matches);
+  const liveMatches = allMatches.filter(m => !isNaN(Number(m.status)));
+  const finishedMatches = allMatches.filter(m => m.status === "FT");
+  const totalGoals = allMatches.reduce((sum, m) => sum + m.homeScore + m.awayScore, 0);
+
+  const filteredGroups = groupedMockScores.map(group => ({
+    ...group,
+    matches: group.matches.filter(match => {
+      const matchesSearch = searchTerm === "" || 
+        match.homeTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        match.awayTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        group.tournament.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesFilter = 
+        selectedFilter === "all" ||
+        (selectedFilter === "live" && !isNaN(Number(match.status))) ||
+        (selectedFilter === "finished" && match.status === "FT") ||
+        (selectedFilter === "favorites" && favoriteMatches.includes(match.id));
+      
+      return matchesSearch && matchesFilter;
+    })
+  })).filter(group => group.matches.length > 0);
+
+  const toggleFavorite = (matchId: number) => {
+    setFavoriteMatches(prev => 
+      prev.includes(matchId) 
+        ? prev.filter(id => id !== matchId)
+        : [...prev, matchId]
+    );
+  };
+
   return (
-    <div className="bg-[#0e0e0e] min-h-screen text-white flex flex-col items-center">
+    <div className="bg-[#1a1a1a] min-h-screen text-white">
+      {/* Header */}
+      <div className="bg-[#2a2a2a] border-b border-[#2c2c2e]">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">Live Scores</h1>
+                <p className="text-gray-400">Real-time match updates</p>
+              </div>
+            </div>
+            
+            {/* Stats Overview */}
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <p className="text-2xl font-bold text-green-500">{liveMatches.length}</p>
+                </div>
+                <p className="text-sm text-gray-400">Live Now</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-500">{allMatches.length}</p>
+                <p className="text-sm text-gray-400">Total Matches</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-yellow-500">{totalGoals}</p>
+                <p className="text-sm text-gray-400">Goals Today</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <motion.div 
+            className={`bg-[#2a2a2a] border border-[#2c2c2e] rounded-xl p-4 hover:scale-105 transition-all duration-500 ${
+              animateCards ? 'animate-fade-in-up' : 'opacity-0'
+            }`}
+            style={{ animationDelay: '0ms' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Avg Goals/Match</p>
+                <p className="text-2xl font-bold text-white">
+                  {allMatches.length > 0 ? (totalGoals / allMatches.length).toFixed(1) : "0"}
+                </p>
+              </div>
+              <Target className="w-8 h-8 text-green-500" />
+            </div>
+          </motion.div>
 
-      {/* Content */}
-      <main className="flex-1 w-full flex justify-center px-4 py-6">
-        <div className="w-full max-w-lg space-y-6">
-          {groupedMockScores.map((group) => (
-            <div
-              key={group.tournament}
-              className="bg-[#1c1c1e] rounded-2xl px-4 pt-4 pb-2 shadow-sm"
+          <motion.div 
+            className={`bg-[#2a2a2a] border border-[#2c2c2e] rounded-xl p-4 hover:scale-105 transition-all duration-500 ${
+              animateCards ? 'animate-fade-in-up' : 'opacity-0'
+            }`}
+            style={{ animationDelay: '100ms' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Competitions</p>
+                <p className="text-2xl font-bold text-white">{groupedMockScores.length}</p>
+              </div>
+              <Trophy className="w-8 h-8 text-blue-500" />
+            </div>
+          </motion.div>
+
+          <motion.div 
+            className={`bg-[#2a2a2a] border border-[#2c2c2e] rounded-xl p-4 hover:scale-105 transition-all duration-500 ${
+              animateCards ? 'animate-fade-in-up' : 'opacity-0'
+            }`}
+            style={{ animationDelay: '200ms' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Completed</p>
+                <p className="text-2xl font-bold text-white">{finishedMatches.length}</p>
+              </div>
+              <Clock className="w-8 h-8 text-purple-500" />
+            </div>
+          </motion.div>
+
+          <motion.div 
+            className={`bg-[#2a2a2a] border border-[#2c2c2e] rounded-xl p-4 hover:scale-105 transition-all duration-500 ${
+              animateCards ? 'animate-fade-in-up' : 'opacity-0'
+            }`}
+            style={{ animationDelay: '300ms' }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Top Match</p>
+                <p className="text-sm font-bold text-white">5+ Goals</p>
+              </div>
+              <Zap className="w-8 h-8 text-yellow-500" />
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search teams or competitions..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-[#2a2a2a] border border-[#2c2c2e] rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-6 py-3 bg-[#2a2a2a] border border-[#2c2c2e] rounded-xl text-white hover:bg-[#333333] transition-all"
             >
-              {/* Header */}
-              <div className="flex items-center gap-2 text-sm font-semibold text-white/90 mb-3">
-                <span>🏆</span>
-                <span>{group.tournament}</span>
+              <Filter className="w-5 h-5" />
+              Filters
+            </button>
+          </div>
+
+          {/* Filter Pills */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-wrap gap-2"
+              >
+                {["all", "live", "finished", "favorites"].map(filter => (
+                  <button
+                    key={filter}
+                    onClick={() => setSelectedFilter(filter)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      selectedFilter === filter
+                        ? "bg-green-500 text-white"
+                        : "bg-[#2a2a2a] text-gray-400 hover:text-white hover:bg-[#333333]"
+                    }`}
+                  >
+                    {filter === "all" && "All Matches"}
+                    {filter === "live" && "🔴 Live Only"}
+                    {filter === "finished" && "Finished"}
+                    {filter === "favorites" && "⭐ Favorites"}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Match Groups */}
+        <div className="space-y-6">
+          {filteredGroups.map((group, groupIndex) => (
+            <motion.div
+              key={group.tournament}
+              className={`bg-[#2a2a2a] rounded-2xl border border-[#2c2c2e] overflow-hidden hover:border-green-500/50 transition-all duration-500 ${
+                animateCards ? 'animate-fade-in-up' : 'opacity-0'
+              }`}
+              style={{ animationDelay: `${(groupIndex + 4) * 100}ms` }}
+            >
+              {/* Tournament Header */}
+              <div className="bg-gradient-to-r from-[#333333] to-[#2a2a2a] px-6 py-4 border-b border-[#2c2c2e]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    <h2 className="text-lg font-bold text-white">{group.tournament}</h2>
+                    <span className="text-xs text-gray-400 bg-[#1a1a1a] px-2 py-1 rounded-full">
+                      {group.matches.length} matches
+                    </span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
               </div>
 
               {/* Matches */}
-              <div className="space-y-2 divide-y divide-[#2c2c2e]">
-{group.matches.map((match) => (
-<div
-  onClick={() => navigate(`/match/${match.id}`)}
-  className="cursor-pointer grid grid-cols-[36px_1fr_60px_1fr] items-center py-2 px-3 gap-2 rounded-md hover:bg-[#2a2a2a] transition"
->
-    {/* Status */}
-    <div className="flex justify-start">
-      {getStatusBadge(match.status)}
-    </div>
+              <div className="divide-y divide-[#2c2c2e]">
+                {group.matches.map((match, matchIndex) => {
+                  const intensity = getMatchIntensity(match.homeScore, match.awayScore);
+                  const isFavorite = favoriteMatches.includes(match.id);
+                  const isLive = !isNaN(Number(match.status));
 
-    {/* Home team */}
-    <div className="flex items-center justify-end gap-2 truncate">
-      <span className="text-sm font-medium truncate">{match.homeTeam}</span>
-      <img
-        src={match.homeLogo}
-        className="w-5 h-5 rounded-full object-cover"
-        alt={match.homeTeam}
-      />
-    </div>
+                  return (
+                    <motion.div
+                      key={match.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: matchIndex * 0.05 }}
+                      className="relative group"
+                    >
+                      <div
+                        onClick={() => navigate(`/match/${match.id}`)}
+                        className="cursor-pointer px-6 py-4 hover:bg-[#333333] transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          {/* Match Status and Time */}
+                          <div className="flex items-center gap-4 w-24">
+                            {getStatusBadge(match.status)}
+                            {isLive && (
+                              <TrendingUp className={`w-4 h-4 ${intensity.color}`} />
+                            )}
+                          </div>
 
-    {/* Score */}
-    <div className="text-sm font-bold text-center">
-      {match.homeScore} - {match.awayScore}
-    </div>
+                          {/* Teams and Score */}
+                          <div className="flex-1 flex items-center justify-center gap-8">
+                            {/* Home Team */}
+                            <div className="flex items-center gap-3 flex-1 justify-end">
+                              <span className="text-sm font-medium text-white truncate">
+                                {match.homeTeam}
+                              </span>
+                              <img
+                                src={match.homeLogo}
+                                className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2c2c2e]"
+                                alt={match.homeTeam}
+                              />
+                            </div>
 
-    {/* Away team */}
-    <div className="flex items-center justify-start gap-2 truncate">
-      <img
-        src={match.awayLogo}
-        className="w-5 h-5 rounded-full object-cover"
-        alt={match.awayTeam}
-      />
-      <span className="text-sm font-medium truncate">{match.awayTeam}</span>
-    </div>
-  </div>
-))}
+                            {/* Score */}
+                            <div className="flex items-center gap-4 px-6 py-2 bg-[#1a1a1a] rounded-xl">
+                              <span className={`text-2xl font-bold ${match.homeScore > match.awayScore ? 'text-green-500' : 'text-white'}`}>
+                                {match.homeScore}
+                              </span>
+                              <span className="text-gray-500">-</span>
+                              <span className={`text-2xl font-bold ${match.awayScore > match.homeScore ? 'text-green-500' : 'text-white'}`}>
+                                {match.awayScore}
+                              </span>
+                            </div>
 
+                            {/* Away Team */}
+                            <div className="flex items-center gap-3 flex-1">
+                              <img
+                                src={match.awayLogo}
+                                className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2c2c2e]"
+                                alt={match.awayTeam}
+                              />
+                              <span className="text-sm font-medium text-white truncate">
+                                {match.awayTeam}
+                              </span>
+                            </div>
+                          </div>
 
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(match.id);
+                              }}
+                              className={`p-2 rounded-full transition-all ${
+                                isFavorite 
+                                  ? 'text-yellow-400 hover:text-yellow-300' 
+                                  : 'text-gray-500 hover:text-yellow-400'
+                              }`}
+                            >
+                              <Star className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Match Intensity Indicator */}
+                        {isLive && (
+                          <div className="mt-2 text-xs text-gray-400 flex items-center gap-2">
+                            <span className={`${intensity.color} font-medium`}>{intensity.label}</span>
+                            <span>•</span>
+                            <span>{match.homeScore + match.awayScore} goals</span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </main>
+
+        {filteredGroups.length === 0 && (
+          <div className="text-center py-20">
+            <div className="w-24 h-24 mx-auto mb-4 bg-[#2a2a2a] rounded-full flex items-center justify-center border border-[#2c2c2e]">
+              <Search className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-400 mb-2">No matches found</h3>
+            <p className="text-gray-500">Try adjusting your search or filters</p>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
