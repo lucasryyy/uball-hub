@@ -12,10 +12,9 @@ export default function Layout() {
 
         <nav className="flex gap-5 text-la font-large text-white">
           <Link to="/" className="hover:text-gray-300">Live</Link>
-          <Link to="#" className="hover:text-gray-300">Ligaer</Link>
+          <Link to="/league" className="hover:text-gray-300">Ligaer</Link>
           <Link to="#" className="hover:text-gray-300">Transfers</Link>
           <Link to="#" className="hover:text-gray-300">Favoritter</Link>
-          <Link to="/league/premier-league" className="hover:text-gray-300">Ligaer</Link>
         </nav>
       </header>
 

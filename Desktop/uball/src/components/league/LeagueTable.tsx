@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 type Team = {
-  id: number;
+  id: string;
   name: string;
   logo: string;
   played: number;
@@ -67,10 +68,15 @@ export default function LeagueTable({ teams }: Props) {
           {sortedTeams.map((team, idx) => (
             <tr key={team.id} className="border-t border-[#2c2c2e]">
               <td className="px-4 py-2 font-semibold">{idx + 1}</td>
-              <td className="px-4 py-2 flex items-center gap-2">
+                <td className="px-4 py-2 flex items-center gap-2">
                 <img src={team.logo} alt={team.name} className="w-5 h-5 rounded-full" />
-                <span className="truncate">{team.name}</span>
-              </td>
+                <Link
+                    to={`/team/${team.id}`}
+                    className="truncate hover:underline transition"
+                >
+                    {team.name}
+                </Link>
+                </td>
               <td className="px-2 py-2">{team.played}</td>
               <td className="px-2 py-2">{team.wins}</td>
               <td className="px-2 py-2">{team.draws}</td>
