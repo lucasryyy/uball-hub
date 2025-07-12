@@ -1,75 +1,83 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import TeamSquad from "./TeamSquad";
+import TeamHeader from "./TeamHeader";
 import TeamFixtures from "./TeamFixtures";
+import TeamResults from "./TeamResults";
+import TeamSquad from "./TeamSquad";
 import TeamStats from "./TeamStats";
-import { teams } from "../../data/teams";
+import type { Player, Fixture, Stat, TeamDetail } from "./teamTypes";
 
 export default function TeamPage() {
-  const { id } = useParams();
-  const [following, setFollowing] = useState(false);
+  const { id } = useParams<{ id: string }>();
+  const [team, setTeam] = useState<TeamDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
 
-  const team = teams.find((t) => t.id === id);
+  useEffect(() => {
+    if (id) fetchTeamDetail();
+  }, [id]);
 
-  if (!team) {
-    return <div className="text-center text-white mt-10">Team not found</div>;
+  async function fetchTeamDetail() {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/teams/${id}`);
+      const data: TeamDetail = await res.json();
+      setTeam(data);
+    } catch (err) {
+      console.error("Failed to load team detail", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading || !team) {
+    return <div>Loading team details...</div>;
   }
 
   return (
-    <div className="bg-[#0e0e0e] min-h-screen text-white px-4 py-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <img src={team.logo} alt={team.name} className="w-10 h-10" />
-          <h1 className="text-2xl font-semibold">{team.name}</h1>
-          <span className="text-sm text-gray-400">#{team.position} in league</span>
-        </div>
-        <button
-          onClick={() => setFollowing(!following)}
-          className={`text-sm px-3 py-1 rounded border ${
-            following ? "bg-green-600 border-green-500" : "border-gray-500"
-          }`}
-        >
-          {following ? "✓ Following" : "Follow"}
-        </button>
+    <div className="min-h-screen bg-[#1a1a1a] text-white">
+      <TeamHeader
+        name={team.name}
+        logo={team.logo}
+        league={team.league}
+        position={team.position}
+        points={team.points}
+        nextFixture={team.nextFixture}
+      />
+
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+          <Tabs.List className="flex space-x-4 mb-6">
+            <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
+            <Tabs.Trigger value="fixtures">Fixtures</Tabs.Trigger>
+            <Tabs.Trigger value="results">Results</Tabs.Trigger>
+            <Tabs.Trigger value="squad">Squad</Tabs.Trigger>
+            <Tabs.Trigger value="stats">Stats</Tabs.Trigger>
+          </Tabs.List>
+
+          <Tabs.Content value="overview">
+            {/* Could show summary or highlight banner */}
+            <p className="text-gray-400">Overview coming soon.</p>
+          </Tabs.Content>
+
+          <Tabs.Content value="fixtures">
+            <TeamFixtures fixtures={team.fixtures} />
+          </Tabs.Content>
+
+          <Tabs.Content value="results">
+            <TeamResults fixtures={team.recentResults} />
+          </Tabs.Content>
+
+          <Tabs.Content value="squad">
+            <TeamSquad players={team.squad} />
+          </Tabs.Content>
+
+          <Tabs.Content value="stats">
+            <TeamStats stats={team.stats} />
+          </Tabs.Content>
+        </Tabs.Root>
       </div>
-
-      {/* Tabs */}
-      <Tabs.Root defaultValue="squad">
-        <Tabs.List className="flex gap-4 border-b border-[#2c2c2e] mb-4">
-          <Tabs.Trigger
-            value="squad"
-            className="px-4 py-2 text-sm font-medium text-gray-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-green-500"
-          >
-            Squad
-          </Tabs.Trigger>
-          <Tabs.Trigger
-            value="fixtures"
-            className="px-4 py-2 text-sm font-medium text-gray-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-green-500"
-          >
-            Matches
-          </Tabs.Trigger>
-          <Tabs.Trigger
-            value="stats"
-            className="px-4 py-2 text-sm font-medium text-gray-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-green-500"
-          >
-            Stats
-          </Tabs.Trigger>
-        </Tabs.List>
-
-        <Tabs.Content value="squad">
-          <TeamSquad players={team.players} />
-        </Tabs.Content>
-
-        <Tabs.Content value="fixtures">
-          <TeamFixtures fixtures={team.fixtures} />
-        </Tabs.Content>
-
-        <Tabs.Content value="stats">
-          <TeamStats stats={team.stats} />
-        </Tabs.Content>
-      </Tabs.Root>
     </div>
   );
 }

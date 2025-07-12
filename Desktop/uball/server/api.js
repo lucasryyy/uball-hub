@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { scrapeAndStoreTransfers } from "./transfermarktScraper.js";
+import { scrapeAndStoreLeagues } from "./leagueScraper.js";
 import {
   scrapePremierLeague,
   scrapeLaLiga,
@@ -23,39 +24,83 @@ app.get('/api/transfers', (req, res) => {
   });
 });
 
-app.get('/api/league/:id', async (req, res) => {
-  try {
-    let data;
-    switch (req.params.id) {
-      case 'premier-league':
-        data = await scrapePremierLeague();
-        break;
-      case 'la-liga':
-        data = await scrapeLaLiga();
-        break;
-      case 'bundesliga':
-        data = await scrapeBundesliga();
-        break;
-      case 'serie-a':
-        data = await scrapeSerieA();
-        break;
-      case 'ligue-1':
-        data = await scrapeLigue1();
-        break;
-      default:
-        return res.status(404).json({ error: 'League not found' });
+app.get('/api/league/:id', (req, res) => {
+  const leagueId = req.params.id;
+  
+  // Get all teams for the league, let the client handle any deduplication
+  db.all(
+    `SELECT * FROM league_tables 
+     WHERE leagueId = ? 
+     ORDER BY position ASC`,
+    [leagueId],
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'League not found or no data available' });
+      }
+      
+      // Since we have UNIQUE constraint on (teamName, leagueId), we should only have one row per team
+      // Sort by position to ensure correct order
+      const sortedRows = rows.sort((a, b) => a.position - b.position);
+      
+      res.json(sortedRows);
     }
-    res.json(data);
-  } catch (err) {
-    console.error('Failed to scrape league:', err);
-    res.status(500).json({ error: 'Scrape failed' });
-  }
+  );
 });
 
+// Get all leagues
+app.get('/api/leagues', (req, res) => {
+  db.all(
+    'SELECT * FROM league_tables ORDER BY leagueId, position ASC',
+    (err, rows) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      // Group by league
+      const leagues = {};
+      rows.forEach(row => {
+        if (!leagues[row.leagueId]) {
+          leagues[row.leagueId] = [];
+        }
+        leagues[row.leagueId].push(row);
+      });
+      
+      res.json(leagues);
+    }
+  );
+});
+
+// Set up periodic scraping
 setInterval(() => {
   scrapeAndStoreTransfers();
-}, 60 * 1000);
+}, 60 * 1000); // Every minute
+
+// Update league data every 30 minutes
+setInterval(() => {
+  console.log('🔄 Updating league data...');
+  scrapeAndStoreLeagues();
+}, 30 * 60 * 1000); // Every 30 minutes
 
 app.listen(PORT, () => {
-  console.log(`✅ Transfer API running on http://localhost:${PORT}`);
+  console.log(`✅ Football API Server running on http://localhost:${PORT}`);
+  console.log(`📊 Available endpoints:`);
+  console.log(`   - GET /api/transfers - Get latest transfers`);
+  console.log(`   - GET /api/leagues - Get all league tables`);
+  console.log(`   - GET /api/league/:id - Get specific league table`);
 });
+
+// Initial data load after server starts
+setTimeout(() => {
+  console.log('🚀 Loading initial data...');
+  scrapeAndStoreLeagues().then(() => {
+    console.log('✅ Initial league data loaded');
+  }).catch(err => {
+    console.error('❌ Failed to load initial league data:', err);
+  });
+}, 2000); // Wait 2 seconds for server to be ready

@@ -1,8 +1,26 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { groupedMockScores } from "../data/mockScores";
-import { Trophy, Clock, Calendar, Filter, Search, TrendingUp, Zap, Star, ChevronRight, Activity, Users, Target } from "lucide-react";
+import { Trophy, Clock, Calendar, Filter, Search, TrendingUp, Zap, Star, ChevronRight, Activity, Users, Target, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+type Match = {
+  id: number;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+  homeLogo: string;
+  awayLogo: string;
+  status: string;
+  competition: string;
+  matchTime: string;
+  date: string;
+};
+
+type GroupedMatches = {
+  tournament: string;
+  matches: Match[];
+};
 
 const getStatusBadge = (status: string) => {
   const isLive = !isNaN(Number(status));
@@ -30,23 +48,77 @@ const getMatchIntensity = (homeScore: number, awayScore: number) => {
 
 export default function LiveScores() {
   const navigate = useNavigate();
+  const [groupedMatches, setGroupedMatches] = useState<GroupedMatches[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [favoriteMatches, setFavoriteMatches] = useState<number[]>([]);
   const [animateCards, setAnimateCards] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
+    fetchLiveScores();
     setTimeout(() => setAnimateCards(true), 100);
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchLiveScores(true);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
+  const fetchLiveScores = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setIsRefreshing(true);
+
+    try {
+      const response = await fetch("http://localhost:3001/api/livescores");
+      const data = await response.json();
+      setGroupedMatches(data);
+      setLastUpdate(new Date());
+    } catch (error) {
+      console.error("Failed to fetch live scores:", error);
+      // Use mock data as fallback
+      setGroupedMatches(getMockData());
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  const getMockData = (): GroupedMatches[] => {
+    return [
+      {
+        tournament: "Premier League",
+        matches: [
+          {
+            id: 1,
+            homeTeam: "Arsenal",
+            awayTeam: "Chelsea",
+            homeScore: 2,
+            awayScore: 1,
+            homeLogo: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg",
+            awayLogo: "https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg",
+            status: "73",
+            competition: "Premier League",
+            matchTime: new Date().toISOString(),
+            date: new Date().toISOString()
+          }
+        ]
+      }
+    ];
+  };
+
   // Calculate statistics
-  const allMatches = groupedMockScores.flatMap(group => group.matches);
+  const allMatches = groupedMatches.flatMap(group => group.matches);
   const liveMatches = allMatches.filter(m => !isNaN(Number(m.status)));
   const finishedMatches = allMatches.filter(m => m.status === "FT");
   const totalGoals = allMatches.reduce((sum, m) => sum + m.homeScore + m.awayScore, 0);
 
-  const filteredGroups = groupedMockScores.map(group => ({
+  const filteredGroups = groupedMatches.map(group => ({
     ...group,
     matches: group.matches.filter(match => {
       const matchesSearch = searchTerm === "" || 
@@ -105,7 +177,19 @@ export default function LiveScores() {
                 <p className="text-2xl font-bold text-yellow-500">{totalGoals}</p>
                 <p className="text-sm text-gray-400">Goals Today</p>
               </div>
+              <button
+                onClick={() => fetchLiveScores()}
+                className={`p-2 rounded-full bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-all ${
+                  isRefreshing ? 'animate-spin' : ''
+                }`}
+                title="Refresh scores"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </button>
             </div>
+          </div>
+          <div className="text-xs text-gray-500 mt-2">
+            Last updated: {lastUpdate.toLocaleTimeString()}
           </div>
         </div>
       </div>
@@ -139,7 +223,7 @@ export default function LiveScores() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-400">Competitions</p>
-                <p className="text-2xl font-bold text-white">{groupedMockScores.length}</p>
+                <p className="text-2xl font-bold text-white">{groupedMatches.length}</p>
               </div>
               <Trophy className="w-8 h-8 text-blue-500" />
             </div>
@@ -228,132 +312,148 @@ export default function LiveScores() {
           </AnimatePresence>
         </div>
 
-        {/* Match Groups */}
-        <div className="space-y-6">
-          {filteredGroups.map((group, groupIndex) => (
-            <motion.div
-              key={group.tournament}
-              className={`bg-[#2a2a2a] rounded-2xl border border-[#2c2c2e] overflow-hidden hover:border-green-500/50 transition-all duration-500 ${
-                animateCards ? 'animate-fade-in-up' : 'opacity-0'
-              }`}
-              style={{ animationDelay: `${(groupIndex + 4) * 100}ms` }}
-            >
-              {/* Tournament Header */}
-              <div className="bg-gradient-to-r from-[#333333] to-[#2a2a2a] px-6 py-4 border-b border-[#2c2c2e]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Trophy className="w-5 h-5 text-yellow-500" />
-                    <h2 className="text-lg font-bold text-white">{group.tournament}</h2>
-                    <span className="text-xs text-gray-400 bg-[#1a1a1a] px-2 py-1 rounded-full">
-                      {group.matches.length} matches
-                    </span>
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-green-500 animate-spin"></div>
+            </div>
+            <span className="ml-4 text-gray-400">Loading live scores...</span>
+          </div>
+        ) : (
+          /* Match Groups */
+          <div className="space-y-6">
+            {filteredGroups.map((group, groupIndex) => (
+              <motion.div
+                key={group.tournament}
+                className={`bg-[#2a2a2a] rounded-2xl border border-[#2c2c2e] overflow-hidden hover:border-green-500/50 transition-all duration-500 ${
+                  animateCards ? 'animate-fade-in-up' : 'opacity-0'
+                }`}
+                style={{ animationDelay: `${(groupIndex + 4) * 100}ms` }}
+              >
+                {/* Tournament Header */}
+                <div className="bg-gradient-to-r from-[#333333] to-[#2a2a2a] px-6 py-4 border-b border-[#2c2c2e]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="w-5 h-5 text-yellow-500" />
+                      <h2 className="text-lg font-bold text-white">{group.tournament}</h2>
+                      <span className="text-xs text-gray-400 bg-[#1a1a1a] px-2 py-1 rounded-full">
+                        {group.matches.length} matches
+                      </span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
-              </div>
 
-              {/* Matches */}
-              <div className="divide-y divide-[#2c2c2e]">
-                {group.matches.map((match, matchIndex) => {
-                  const intensity = getMatchIntensity(match.homeScore, match.awayScore);
-                  const isFavorite = favoriteMatches.includes(match.id);
-                  const isLive = !isNaN(Number(match.status));
+                {/* Matches */}
+                <div className="divide-y divide-[#2c2c2e]">
+                  {group.matches.map((match, matchIndex) => {
+                    const intensity = getMatchIntensity(match.homeScore, match.awayScore);
+                    const isFavorite = favoriteMatches.includes(match.id);
+                    const isLive = !isNaN(Number(match.status));
 
-                  return (
-                    <motion.div
-                      key={match.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: matchIndex * 0.05 }}
-                      className="relative group"
-                    >
-                      <div
-                        onClick={() => navigate(`/match/${match.id}`)}
-                        className="cursor-pointer px-6 py-4 hover:bg-[#333333] transition-all"
+                    return (
+                      <motion.div
+                        key={match.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: matchIndex * 0.05 }}
+                        className="relative group"
                       >
-                        <div className="flex items-center justify-between">
-                          {/* Match Status and Time */}
-                          <div className="flex items-center gap-4 w-24">
-                            {getStatusBadge(match.status)}
-                            {isLive && (
-                              <TrendingUp className={`w-4 h-4 ${intensity.color}`} />
-                            )}
-                          </div>
-
-                          {/* Teams and Score */}
-                          <div className="flex-1 flex items-center justify-center gap-8">
-                            {/* Home Team */}
-                            <div className="flex items-center gap-3 flex-1 justify-end">
-                              <span className="text-sm font-medium text-white truncate">
-                                {match.homeTeam}
-                              </span>
-                              <img
-                                src={match.homeLogo}
-                                className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2c2c2e]"
-                                alt={match.homeTeam}
-                              />
+                        <div
+                          onClick={() => navigate(`/match/${match.id}`)}
+                          className="cursor-pointer px-6 py-4 hover:bg-[#333333] transition-all"
+                        >
+                          <div className="flex items-center justify-between">
+                            {/* Match Status and Time */}
+                            <div className="flex items-center gap-4 w-24">
+                              {getStatusBadge(match.status)}
+                              {isLive && (
+                                <TrendingUp className={`w-4 h-4 ${intensity.color}`} />
+                              )}
                             </div>
 
-                            {/* Score */}
-                            <div className="flex items-center gap-4 px-6 py-2 bg-[#1a1a1a] rounded-xl">
-                              <span className={`text-2xl font-bold ${match.homeScore > match.awayScore ? 'text-green-500' : 'text-white'}`}>
-                                {match.homeScore}
-                              </span>
-                              <span className="text-gray-500">-</span>
-                              <span className={`text-2xl font-bold ${match.awayScore > match.homeScore ? 'text-green-500' : 'text-white'}`}>
-                                {match.awayScore}
-                              </span>
+                            {/* Teams and Score */}
+                            <div className="flex-1 flex items-center justify-center gap-8">
+                              {/* Home Team */}
+                              <div className="flex items-center gap-3 flex-1 justify-end">
+                                <span className="text-sm font-medium text-white truncate">
+                                  {match.homeTeam}
+                                </span>
+                                <img
+                                  src={match.homeLogo}
+                                  className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2c2c2e]"
+                                  alt={match.homeTeam}
+                                  onError={(e) => {
+                                    e.currentTarget.src = `https://via.placeholder.com/50?text=${match.homeTeam.substring(0, 3)}`;
+                                  }}
+                                />
+                              </div>
+
+                              {/* Score */}
+                              <div className="flex items-center gap-4 px-6 py-2 bg-[#1a1a1a] rounded-xl">
+                                <span className={`text-2xl font-bold ${match.homeScore > match.awayScore ? 'text-green-500' : 'text-white'}`}>
+                                  {match.homeScore}
+                                </span>
+                                <span className="text-gray-500">-</span>
+                                <span className={`text-2xl font-bold ${match.awayScore > match.homeScore ? 'text-green-500' : 'text-white'}`}>
+                                  {match.awayScore}
+                                </span>
+                              </div>
+
+                              {/* Away Team */}
+                              <div className="flex items-center gap-3 flex-1">
+                                <img
+                                  src={match.awayLogo}
+                                  className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2c2c2e]"
+                                  alt={match.awayTeam}
+                                  onError={(e) => {
+                                    e.currentTarget.src = `https://via.placeholder.com/50?text=${match.awayTeam.substring(0, 3)}`;
+                                  }}
+                                />
+                                <span className="text-sm font-medium text-white truncate">
+                                  {match.awayTeam}
+                                </span>
+                              </div>
                             </div>
 
-                            {/* Away Team */}
-                            <div className="flex items-center gap-3 flex-1">
-                              <img
-                                src={match.awayLogo}
-                                className="w-8 h-8 rounded-full object-cover ring-2 ring-[#2c2c2e]"
-                                alt={match.awayTeam}
-                              />
-                              <span className="text-sm font-medium text-white truncate">
-                                {match.awayTeam}
-                              </span>
+                            {/* Actions */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(match.id);
+                                }}
+                                className={`p-2 rounded-full transition-all ${
+                                  isFavorite 
+                                    ? 'text-yellow-400 hover:text-yellow-300' 
+                                    : 'text-gray-500 hover:text-yellow-400'
+                                }`}
+                              >
+                                <Star className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                              </button>
                             </div>
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleFavorite(match.id);
-                              }}
-                              className={`p-2 rounded-full transition-all ${
-                                isFavorite 
-                                  ? 'text-yellow-400 hover:text-yellow-300' 
-                                  : 'text-gray-500 hover:text-yellow-400'
-                              }`}
-                            >
-                              <Star className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-                            </button>
-                          </div>
+                          {/* Match Intensity Indicator */}
+                          {isLive && (
+                            <div className="mt-2 text-xs text-gray-400 flex items-center gap-2">
+                              <span className={`${intensity.color} font-medium`}>{intensity.label}</span>
+                              <span>•</span>
+                              <span>{match.homeScore + match.awayScore} goals</span>
+                            </div>
+                          )}
                         </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
-                        {/* Match Intensity Indicator */}
-                        {isLive && (
-                          <div className="mt-2 text-xs text-gray-400 flex items-center gap-2">
-                            <span className={`${intensity.color} font-medium`}>{intensity.label}</span>
-                            <span>•</span>
-                            <span>{match.homeScore + match.awayScore} goals</span>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {filteredGroups.length === 0 && (
+        {filteredGroups.length === 0 && !loading && (
           <div className="text-center py-20">
             <div className="w-24 h-24 mx-auto mb-4 bg-[#2a2a2a] rounded-full flex items-center justify-center border border-[#2c2c2e]">
               <Search className="w-8 h-8 text-gray-400" />

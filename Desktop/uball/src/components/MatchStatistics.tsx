@@ -1,5 +1,21 @@
 // src/components/MatchStatistics.tsx
-import type { MatchStatistics } from '../data/mockMatchDetails';
+export type MatchStatistics = {
+  possession: { home: number; away: number };
+  shots: { home: number; away: number };
+  shotsOnTarget: { home: number; away: number };
+  corners: { home: number; away: number };
+  fouls: { home: number; away: number };
+  yellowCards: { home: number; away: number };
+  redCards: { home: number; away: number };
+  offsides: { home: number; away: number };
+  passAccuracy: { home: number; away: number };
+  aerialDuels: { home: number; away: number };
+  tackles: { home: number; away: number };
+  interceptions: { home: number; away: number };
+  clearances: { home: number; away: number };
+  crosses: { home: number; away: number };
+  saves: { home: number; away: number };
+};
 
 type Props = {
   statistics: MatchStatistics;

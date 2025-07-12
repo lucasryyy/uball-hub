@@ -52,13 +52,24 @@ export async function scrapeTransfers() {
     }
 
     const transfers = [];
+    let validRowsFound = 0;
+    
     rows.each((index, row) => {
       try {
         const cells = $(row).find("td");
         if (cells.length < 8) {
-          console.log(`Row ${index}: Only ${cells.length} cells found`);
+          // Skip rows with insufficient cells - these are likely empty or irrelevant rows
           return;
         }
+        
+        // Check if this row actually contains transfer data by looking for player name
+        const potentialPlayer = $(cells[0]).text().trim();
+        if (!potentialPlayer || potentialPlayer.length < 2) {
+          // Skip rows without valid player names
+          return;
+        }
+        
+        validRowsFound++;
         const rawData = cells.map((i, cell) => {
           const cellObj = {
             text: $(cell).text().trim(),
@@ -129,7 +140,8 @@ export async function scrapeTransfers() {
         console.error(`Error processing row ${index}:`, error);
       }
     });
-    console.log(`Successfully scraped ${transfers.length} transfers`);
+    
+    console.log(`Successfully scraped ${transfers.length} transfers from ${validRowsFound} valid rows out of ${rows.length} total rows`);
     return transfers.slice(0, 30);
 
   } catch (error) {
@@ -139,12 +151,67 @@ export async function scrapeTransfers() {
 }
 
 export async function scrapeAndStoreTransfers() {
-  const transfers = await scrapeTransfers();
-  transfers.forEach(t => {
-    db.run(
-        `INSERT OR IGNORE INTO transfers (player, age, nationality, position, fromClub, toClub, fee, transferType, playerImg, date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [t.player, t.age, t.nationality, t.position, t.from, t.to, t.fee, t.transferType, t.playerImg, t.date]
+  try {
+    const transfers = await scrapeTransfers();
+    
+    if (transfers.length === 0) {
+      console.log("No transfers to store");
+      return;
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    transfers.forEach((t, index) => {
+      try {
+        // Sanitize the data to prevent SQLite datatype mismatches
+        const sanitizedTransfer = {
+          player: (t.player || '').toString().trim() || `Player ${index + 1}`,
+          age: (t.age || '').toString().trim() || 'Unknown',
+          nationality: (t.nationality || '').toString().trim() || 'Unknown',
+          position: (t.position || '').toString().trim() || 'Unknown',
+          from: (t.from || '').toString().trim() || 'Unknown',
+          to: (t.to || '').toString().trim() || 'Unknown',
+          fee: (t.fee || '').toString().trim() || 'Undisclosed',
+          transferType: (t.transferType || '').toString().trim() || 'permanent',
+          playerImg: (t.playerImg || '').toString().trim() || 'https://img.a.transfermarkt.technology/portrait/medium/default.jpg',
+          date: (t.date || new Date().toISOString()).toString()
+        };
+        
+        db.run(
+          `INSERT OR IGNORE INTO transfers (player, age, nationality, position, fromClub, toClub, fee, transferType, playerImg, date)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            sanitizedTransfer.player, 
+            sanitizedTransfer.age, 
+            sanitizedTransfer.nationality, 
+            sanitizedTransfer.position, 
+            sanitizedTransfer.from, 
+            sanitizedTransfer.to, 
+            sanitizedTransfer.fee, 
+            sanitizedTransfer.transferType, 
+            sanitizedTransfer.playerImg, 
+            sanitizedTransfer.date
+          ],
+          function(err) {
+            if (err) {
+              console.error(`Error storing transfer ${index + 1}:`, err);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          }
         );
-  });
+        
+      } catch (transferError) {
+        console.error(`Error processing transfer ${index + 1}:`, transferError);
+        errorCount++;
+      }
+    });
+    
+    console.log(`✅ Transfer storage completed: ${successCount} successful, ${errorCount} errors`);
+    
+  } catch (error) {
+    console.error('❌ Transfer scraping and storage failed:', error);
+  }
 }

@@ -1,15 +1,48 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { leagues } from "../../data/league";
 import { Search, Filter, Trophy, TrendingUp, Star, Calendar, Users, Globe } from "lucide-react";
 
-const LEAGUE_TIERS = {
-  "Top 5": ["premier-league", "laliga", "serie-a", "bundesliga", "ligue-1"],
+const LEAGUE_TIERS: Record<string, string[]> = {
+  "Top 5": ["premier-league", "la-liga", "serie-a", "bundesliga", "ligue-1"],
   "European": ["eredivisie", "primeira-liga", "belgian-pro-league"],
   "International": ["champions-league", "europa-league", "world-cup"]
 };
 
+const getLeagueName = (leagueId: string): string => {
+  const names: Record<string, string> = {
+    "premier-league": "Premier League",
+    "la-liga": "La Liga",
+    "serie-a": "Serie A",
+    "bundesliga": "Bundesliga",
+    "ligue-1": "Ligue 1"
+  };
+  return names[leagueId] || leagueId;
+};
+
+const getLeagueCountry = (leagueId: string): string => {
+  const countries: Record<string, string> = {
+    "premier-league": "England",
+    "la-liga": "Spain",
+    "serie-a": "Italy",
+    "bundesliga": "Germany",
+    "ligue-1": "France"
+  };
+  return countries[leagueId] || "Unknown";
+};
+
+const getLeagueLogo = (leagueId: string): string => {
+  const logos: Record<string, string> = {
+    "premier-league": "https://via.placeholder.com/50?text=PL",
+    "la-liga": "https://via.placeholder.com/50?text=LL",
+    "serie-a": "https://via.placeholder.com/50?text=SA",
+    "bundesliga": "https://via.placeholder.com/50?text=BL",
+    "ligue-1": "https://via.placeholder.com/50?text=L1"
+  };
+  return logos[leagueId] || "https://via.placeholder.com/50?text=??";
+};
+
 export default function LeagueOverview() {
+  const [leagues, setLeagues] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState("all");
   const [selectedCountry, setSelectedCountry] = useState("all");
@@ -19,6 +52,31 @@ export default function LeagueOverview() {
 
   useEffect(() => {
     setTimeout(() => setAnimateCards(true), 100);
+  }, []);
+
+  useEffect(() => {
+    async function fetchLeagues() {
+      try {
+        const res = await fetch("http://localhost:3001/api/leagues");
+        const data = await res.json();
+        
+        // Transform the data from object to array of league objects
+        const leagueArray = Object.entries(data).map(([leagueId, teams]) => ({
+          id: leagueId,
+          name: getLeagueName(leagueId),
+          country: getLeagueCountry(leagueId),
+          logoUrl: getLeagueLogo(leagueId),
+          teams: teams,
+          seasons: ["2023-24"] // Default current season
+        }));
+        
+        setLeagues(leagueArray);
+      } catch (err) {
+        console.error("Failed to fetch leagues", err);
+        setLeagues([]);
+      }
+    }
+    fetchLeagues();
   }, []);
 
   const filteredLeagues = leagues.filter((league) => {
@@ -45,8 +103,8 @@ export default function LeagueOverview() {
 
   const getLeagueStats = (league: any) => {
     const teams = league.teams || [];
-    const totalGoals = teams.reduce((sum: number, team: any) => sum + (team.stats?.goals || 0), 0);
-    const totalMatches = teams.length > 0 ? teams.length * 2 : 0; // Rough estimate
+    const totalGoals = teams.reduce((sum: number, team: any) => sum + (team.goalsFor || 0), 0);
+    const totalMatches = teams.reduce((sum: number, team: any) => sum + (team.played || 0), 0);
     
     return {
       teams: teams.length,

@@ -1,4 +1,9 @@
-import type { PlayerRating } from '../data/mockMatchDetails'
+export type PlayerRating = {
+  name: string
+  rating: number
+  position: string
+  number: number
+}
 
 type Props = {
   home: PlayerRating[]

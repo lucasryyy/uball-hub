@@ -2,8 +2,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, TrendingUp, Eye, EyeOff, Activity, Users, Target, Award, Clock, Calendar, ChevronLeft, Share2, Bell, BellOff, MessageCircle, BarChart3, Shield, Zap } from "lucide-react";
-import { groupedMockScores, type Match } from "../data/mockScores";
-import { mockMatchDetails } from "../data/mockMatchDetails";
 import PlayerRatings from "./PlayerRatings";
 import MatchTimeline from "./MatchTimeline";
 import MatchStatistics from "./MatchStatistics";

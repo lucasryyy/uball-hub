@@ -1,4 +1,12 @@
-import type { MatchEvent } from '../data/mockMatchDetails'
+export type MatchEvent = {
+  minute: number
+  team: 'home' | 'away'
+  player: string
+  type: 'goal' | 'yellow' | 'red' | 'sub'
+  assist?: string
+  replaced?: string
+  score?: string
+}
 
 type Props = { events: MatchEvent[] }
 
