@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+// LeagueTable.tsx - Updated version with team links
+
+import { Link, useParams } from "react-router-dom";
+import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 type Team = {
   id: string;
@@ -14,88 +16,130 @@ type Team = {
   form: ("W" | "D" | "L")[];
 };
 
-type Props = {
-  teams: Team[];
-};
-
-const getFormColor = (result: "W" | "D" | "L") => {
-  switch (result) {
-    case "W": return "bg-green-500";
-    case "D": return "bg-yellow-400";
-    case "L": return "bg-red-500";
-  }
-};
-
-export default function LeagueTable({ teams }: Props) {
-  const [sortKey, setSortKey] = useState<keyof Team>("points");
-  const [sortDesc, setSortDesc] = useState(true);
-
-  const sortedTeams = [...teams].sort((a, b) => {
-    const valA = a[sortKey];
-    const valB = b[sortKey];
-    if (typeof valA === "number" && typeof valB === "number") {
-      return sortDesc ? valB - valA : valA - valB;
-    }
-    return 0;
-  });
-
-  const handleSort = (key: keyof Team) => {
-    if (key === sortKey) {
-      setSortDesc(!sortDesc);
-    } else {
-      setSortKey(key);
-      setSortDesc(true);
-    }
-  };
-
+export default function LeagueTable({ teams }: { teams: Team[] }) {
+  const { id: leagueId } = useParams();
+  
   return (
-    <div className="bg-[#1a1a1a] rounded-xl shadow-md overflow-x-auto">
-      <table className="w-full text-sm text-left text-white">
-        <thead className="bg-[#2a2a2a] text-xs uppercase text-gray-400">
-          <tr>
-            <th className="px-4 py-3">#</th>
-            <th className="px-4 py-3">Team</th>
-            <th className="px-2 py-3 cursor-pointer" onClick={() => handleSort("played")}>MP</th>
-            <th className="px-2 py-3 cursor-pointer" onClick={() => handleSort("wins")}>W</th>
-            <th className="px-2 py-3 cursor-pointer" onClick={() => handleSort("draws")}>D</th>
-            <th className="px-2 py-3 cursor-pointer" onClick={() => handleSort("losses")}>L</th>
-            <th className="px-2 py-3 cursor-pointer" onClick={() => handleSort("goalDiff")}>GD</th>
-            <th className="px-2 py-3 cursor-pointer" onClick={() => handleSort("points")}>PTS</th>
-            <th className="px-4 py-3">Form</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTeams.map((team, idx) => (
-            <tr key={team.id} className="border-t border-[#2c2c2e]">
-              <td className="px-4 py-2 font-semibold">{idx + 1}</td>
-                <td className="px-4 py-2 flex items-center gap-2">
-                <img src={team.logo} alt={team.name} className="w-5 h-5 rounded-full" />
-                <Link
-                    to={`/team/${team.id}`}
-                    className="truncate hover:underline transition"
-                >
-                    {team.name}
-                </Link>
-                </td>
-              <td className="px-2 py-2">{team.played}</td>
-              <td className="px-2 py-2">{team.wins}</td>
-              <td className="px-2 py-2">{team.draws}</td>
-              <td className="px-2 py-2">{team.losses}</td>
-              <td className="px-2 py-2">{team.goalDiff}</td>
-              <td className="px-2 py-2 font-bold">{team.points}</td>
-              <td className="px-4 py-2 flex gap-1">
-                {team.form.map((result, i) => (
-                  <span
-                    key={i}
-                    className={`w-3 h-3 rounded-full ${getFormColor(result)}`}
-                    title={result === "W" ? "Win" : result === "D" ? "Draw" : "Loss"}
-                  />
-                ))}
-              </td>
+    <div className="bg-[#2a2a2a] border border-[#2c2c2e] rounded-xl overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#2c2c2e]">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">#</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Team</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">P</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">W</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">D</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">L</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">GD</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Pts</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Form</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-[#2c2c2e]">
+            {teams.map((team, index) => {
+              const position = index + 1;
+              const isChampions = position <= 4;
+              const isEuropa = position === 5;
+              const isConference = position === 6;
+              const isRelegation = position >= teams.length - 2;
+              
+              // Generate team ID from name
+              const teamId = team.name.toLowerCase().replace(/\s+/g, '-');
+              
+              return (
+                <tr 
+                  key={team.id} 
+                  className="hover:bg-[#333333] transition-colors"
+                >
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-medium ${
+                        isChampions ? 'text-blue-400' : 
+                        isEuropa ? 'text-orange-400' : 
+                        isConference ? 'text-green-400' :
+                        isRelegation ? 'text-red-400' : 
+                        'text-gray-300'
+                      }`}>
+                        {position}
+                      </span>
+                      {position < 10 && (
+                        position === 1 ? <TrendingUp className="w-3 h-3 text-green-500" /> :
+                        position === teams.length ? <TrendingDown className="w-3 h-3 text-red-500" /> :
+                        <Minus className="w-3 h-3 text-gray-500" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <Link 
+                      to={`/league/${leagueId}/team/${teamId}`}
+                      className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                    >
+                      <img 
+                        src={team.logo} 
+                        alt={team.name} 
+                        className="w-8 h-8 rounded-full"
+                        onError={(e) => {
+                          e.currentTarget.src = `https://via.placeholder.com/50?text=${team.name.substring(0, 3)}`;
+                        }}
+                      />
+                      <span className="text-sm font-medium text-white hover:text-green-500 transition-colors">
+                        {team.name}
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-300">{team.played}</td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-300">{team.wins}</td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-300">{team.draws}</td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-300">{team.losses}</td>
+                  <td className="px-4 py-4 text-center text-sm font-medium">
+                    <span className={team.goalDiff > 0 ? 'text-green-400' : team.goalDiff < 0 ? 'text-red-400' : 'text-gray-300'}>
+                      {team.goalDiff > 0 ? '+' : ''}{team.goalDiff}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-center text-sm font-bold text-white">{team.points}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex gap-1 justify-center">
+                      {team.form.slice(-5).map((result, i) => (
+                        <span
+                          key={i}
+                          className={`w-6 h-6 rounded text-xs font-medium flex items-center justify-center ${
+                            result === "W" ? "bg-green-500 text-white" : 
+                            result === "D" ? "bg-yellow-400 text-black" : 
+                            "bg-red-500 text-white"
+                          }`}
+                        >
+                          {result}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Legend */}
+      <div className="px-4 py-3 bg-[#1a1a1a] border-t border-[#2c2c2e] flex flex-wrap gap-4 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+          <span className="text-gray-400">Champions League</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+          <span className="text-gray-400">Europa League</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+          <span className="text-gray-400">Conference League</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+          <span className="text-gray-400">Relegation</span>
+        </div>
+      </div>
     </div>
   );
 }

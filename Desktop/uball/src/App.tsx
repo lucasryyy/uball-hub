@@ -17,6 +17,8 @@ function App() {
         <Route path="league" element={<LeagueOverview />} />
         <Route path="league/:id" element={<LeaguePage />} />
         <Route path="team/:id" element={<TeamPage />} />
+        <Route path="/team/:teamId" element={<TeamPage />} />
+        <Route path="/league/:leagueId/team/:teamId" element={<TeamPage />} />
         <Route path="transfers" element={<TransferPage />} />
       </Route>
     </Routes>
